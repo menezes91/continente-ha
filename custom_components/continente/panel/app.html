@@ -345,26 +345,45 @@ function itemHtml(it) {
     : `<button data-open="${esc(it.id)}">Trocar</button>
        <button data-forget="${esc(it.id)}" title="esquecer a decisão">✕</button>`;
 
-  // De onde veio o item: uma receita da lista, ou escrito por ti.
-  const origin = it.source === 'extra'
-    ? '<span class="badge-src">teu</span>'
-    : `<span class="badge-src recipe" title="${esc((it.recipes || []).join(', '))}">${
-        (it.recipes || []).length > 1 ? (it.recipes.length + ' receitas')
-        : esc((it.recipes || [])[0] || 'receita')}</span>`;
-
   return `<div class="item ${it.owned ? 'owned' : ''}" data-item="${esc(it.id)}">
     <div class="row">
       <span class="dot ${it.status}"></span>
       <div class="grow">
         <span class="name">${esc(it.name)}</span>
         <span class="amount">${esc(it.amount)}</span>
-        ${origin}
-        ${it.owned ? '<span class="badge-owned">já tens</span>' : ''}
+        ${originBadge(it)}${ownedBadge(it)}
         ${target}
       </div>
       ${qty}${actions}
     </div>
   </div>`;
+}
+
+/* Uma linha pode juntar várias entradas do Cookidoo com o mesmo nome — três
+   receitas a pedir cebola, ou um artigo que escreveste duas vezes. */
+
+function originBadge(it) {
+  const s = it.sources || {};
+  const recipes = it.recipes || [];
+  const parts = [];
+  if (s.receita) {
+    parts.push(recipes.length === 1 ? recipes[0]
+      : `${s.receita} receita${s.receita > 1 ? 's' : ''}`);
+  }
+  if (s.extra) parts.push(s.extra > 1 ? `teu ×${s.extra}` : 'teu');
+  if (!parts.length) return '';
+  return `<span class="badge-src${s.receita ? ' recipe' : ''}"
+    title="${esc(recipes.length ? recipes.join(', ') : 'escrito por ti')}"
+    >${esc(parts.join(' · '))}</span>`;
+}
+
+function ownedBadge(it) {
+  if (it.owned) return '<span class="badge-owned">já tens</span>';
+  if (!it.owned_count) return '';
+  // Parcial: umas entradas marcadas, outras não. Ainda falta comprar.
+  return `<span class="badge-owned" title="${it.owned_count} das ${
+    it.count} entradas desta lista já estão marcadas">${
+    it.owned_count} de ${it.count} já tens</span>`;
 }
 
 function wire() {

@@ -58,11 +58,12 @@ class ShoppingSync:
             self._cached_list = self.cookidoo.shopping_list()
             self._price_cache.clear()   # preços mudam; recarregar relê-os
         raw = self._cached_list
-        items = []
-        for entry in raw["ingredients"] + raw["additional"]:
-            if entry["owned"] and not include_owned:
-                continue
-            items.append({**entry, **self._state(entry["name"])})
+
+        items = [
+            {**group, **self._state(group["name"])}
+            for group in _group_by_name(raw["ingredients"] + raw["additional"])
+            if include_owned or not group["owned"]
+        ]
         return {
             "items": items,
             "recipes": raw["recipes"],
@@ -233,11 +234,18 @@ class ShoppingSync:
 
         Só nos que entraram: marcar um item que falhou faria desaparecer da
         lista uma coisa que continuas a precisar de comprar.
+
+        Cada linha pode representar várias entradas do Cookidoo — três receitas
+        a pedir cebola são três vistos a pôr, não um.
         """
-        ingredient_ids = [i["id"] for i in items
-                          if i["name"] in bought_terms and i["source"] == "receita"]
-        additional_ids = [i["id"] for i in items
-                          if i["name"] in bought_terms and i["source"] == "extra"]
+        bought = {normalize(t) for t in bought_terms}
+        ingredient_ids: list[str] = []
+        additional_ids: list[str] = []
+        for item in items:
+            if normalize(item["name"]) not in bought:
+                continue
+            ingredient_ids += item["ids"]["receita"]
+            additional_ids += item["ids"]["extra"]
         if not ingredient_ids and not additional_ids:
             return 0
         try:
@@ -258,6 +266,62 @@ class ShoppingSync:
         except CookidooError as exc:
             info["cookidoo"] = str(exc)
         return info
+
+
+def _group_by_name(entries: list[dict]) -> list[dict]:
+    """Junta numa linha as entradas que são o mesmo artigo.
+
+    A lista do Cookidoo repete nomes: "cebola" vem de três receitas e ainda de
+    ti, e há artigos adicionais escritos duas vezes. Cada entrada tem o seu
+    `id`, mas para quem compra é tudo o mesmo produto — mostrar quatro linhas
+    iguais só confunde.
+
+    Duas decisões que o agrupamento obriga a tomar:
+
+    * **Marcado** só quando *todas* as entradas estão marcadas. Se ainda há uma
+      por marcar, ainda precisas de comprar.
+    * **O nome** é o da primeira entrada, mas prefere-se um que comece por
+      maiúscula: entre "cif creme" e "Cif creme", mostra-se o segundo.
+    """
+    groups: dict[str, dict] = {}
+    for entry in entries:
+        key = normalize(entry["name"])
+        group = groups.get(key)
+        if group is None:
+            group = groups[key] = {
+                "key": key,
+                "name": entry["name"],
+                "amount": "",
+                "amounts": [],
+                "count": 0,
+                "owned": True,
+                "owned_count": 0,
+                "source": entry["source"],
+                "sources": {},
+                "recipes": [],
+                "ids": {"receita": [], "extra": []},
+            }
+        group["count"] += 1
+        if entry["owned"]:
+            group["owned_count"] += 1
+        else:
+            group["owned"] = False
+        if entry["name"][:1].isupper() and not group["name"][:1].isupper():
+            group["name"] = entry["name"]
+        if entry["amount"] and entry["amount"] not in group["amounts"]:
+            group["amounts"].append(entry["amount"])
+        group["sources"][entry["source"]] = group["sources"].get(entry["source"], 0) + 1
+        group["ids"][entry["source"]].append(entry["id"])
+        for recipe in entry.get("recipes") or []:
+            if recipe not in group["recipes"]:
+                group["recipes"].append(recipe)
+
+    for group in groups.values():
+        group["amount"] = " · ".join(group["amounts"])
+        # A origem dominante decide o crachá; "receita" ganha a "extra".
+        group["source"] = "receita" if group["sources"].get("receita") else "extra"
+        group["id"] = group["key"]   # identidade estável para a interface
+    return list(groups.values())
 
 
 def _counts(items: list[dict]) -> dict:
