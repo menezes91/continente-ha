@@ -38,7 +38,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     data_dir = hass.config.path(DOMAIN)
     await hass.async_add_executor_job(lib_config.set_data_dir, data_dir)
 
-    coordinator = ContinenteCoordinator(hass, entry)
+    coordinator = await ContinenteCoordinator.async_create(hass, entry)
     await coordinator.async_config_entry_first_refresh()
 
     hass.data.setdefault(DOMAIN, {})[entry.entry_id] = coordinator
@@ -77,16 +77,16 @@ async def _async_register_panel(hass: HomeAssistant) -> None:
     """
     if PANEL_URL_PATH in hass.data.get("frontend_panels", {}):
         return
+    # `panel_custom` exige um web component — o antigo `panel_iframe`, que
+    # aceitava um URL directo, já não existe. O nosso componente não faz mais
+    # nada do que embeber a página que a integração serve.
     await panel_custom.async_register_panel(
         hass,
         frontend_url_path=PANEL_URL_PATH,
-        webcomponent_name="iframe-panel",
+        webcomponent_name="continente-panel",
+        module_url=f"{API_BASE}/panel/continente-panel.js",
         sidebar_title=PANEL_TITLE,
         sidebar_icon=PANEL_ICON,
-        module_url=None,
-        embed_iframe=True,
-        trust_external=False,
-        config={"url": f"{API_BASE}/panel/app.html"},
         require_admin=True,
     )
 

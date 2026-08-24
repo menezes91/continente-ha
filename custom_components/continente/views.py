@@ -46,19 +46,27 @@ async def _run(hass: HomeAssistant, fn, *args):
 
 
 class PanelPageView(HomeAssistantView):
-    """Serve a app de mapeamento e a de preços."""
+    """Serve o web component do painel e as páginas que ele mostra."""
 
     url = f"{API_BASE}/panel/{{page}}"
     name = "api:continente:panel"
     requires_auth = False
 
+    # Lista fechada: nada de servir ficheiros arbitrários a partir do disco.
+    TYPES = {
+        "app.html": "text/html",
+        "precos.html": "text/html",
+        "continente-panel.js": "text/javascript",
+    }
+
     async def get(self, request: web.Request, page: str) -> web.Response:
-        if page not in ("app.html", "precos.html"):
+        content_type = self.TYPES.get(page)
+        if content_type is None:
             raise web.HTTPNotFound
         path = PANEL_DIR / page
         return web.Response(
             body=await request.app["hass"].async_add_executor_job(path.read_bytes),
-            content_type="text/html",
+            content_type=content_type,
             charset="utf-8",
         )
 

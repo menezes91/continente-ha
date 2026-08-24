@@ -42,17 +42,34 @@ class ContinenteCoordinator(DataUpdateCoordinator[dict[str, Any]]):
             update_interval=timedelta(minutes=minutes),
         )
         self.entry = entry
+        # Construídos em `async_create`, no executor: criar o cliente lê o
+        # `sessao.json` do disco e abrir o histórico toca na base de dados —
+        # nada disso pode acontecer no event loop.
+        self.client: ContinenteClient = None  # type: ignore[assignment]
+        self.sync: ShoppingSync = None  # type: ignore[assignment]
+        self.history: PriceHistory = None  # type: ignore[assignment]
+
+    @classmethod
+    async def async_create(
+        cls, hass: HomeAssistant, entry: ConfigEntry
+    ) -> ContinenteCoordinator:
+        coordinator = cls(hass, entry)
+        await hass.async_add_executor_job(coordinator._build)
+        return coordinator
+
+    def _build(self) -> None:
+        """Corre no executor: aqui pode ler ficheiros à vontade."""
         self.client = ContinenteClient(
             credentials=(
-                entry.data[CONF_CONTINENTE_EMAIL],
-                entry.data[CONF_CONTINENTE_PASSWORD],
+                self.entry.data[CONF_CONTINENTE_EMAIL],
+                self.entry.data[CONF_CONTINENTE_PASSWORD],
             )
         )
         self.sync = ShoppingSync(
             self.client,
             cookidoo_credentials=(
-                entry.data.get(CONF_COOKIDOO_EMAIL) or "",
-                entry.data.get(CONF_COOKIDOO_PASSWORD) or "",
+                self.entry.data.get(CONF_COOKIDOO_EMAIL) or "",
+                self.entry.data.get(CONF_COOKIDOO_PASSWORD) or "",
             ),
         )
         self.history = PriceHistory()
