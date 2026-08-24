@@ -205,29 +205,78 @@ class ShoppingSync:
                 merged[pid]["quantity"] += qty
                 merged[pid]["terms"].append(item["name"])
             else:
-                merged[pid] = {"product": pid, "quantity": qty,
-                               "terms": [item["name"]]}
+                merged[pid] = {
+                    "product": pid,
+                    "quantity": qty,
+                    "terms": [item["name"]],
+                    "produto": item["mapped"].get("nome_continente") or pid,
+                    # Os outros produtos aceites, para o caso de este falhar.
+                    "alternativas": [
+                        o for o in (item.get("options") or [])
+                        if o["pid"] != pid and o["pid"] != IGNORE
+                    ],
+                }
 
         if not merged:
             return {"added": 0, "failed": 0, "results": [],
                     "cart": self.continente.cart(),
                     "skipped": len(listing["items"]), "marked": 0}
 
-        out = self.continente.add_many(
-            [{"product": m["product"], "quantity": m["quantity"]}
-             for m in merged.values()]
-        )
-        for result, entry in zip(out["results"], merged.values()):
-            result["terms"] = entry["terms"]
-        out["skipped"] = len(listing["items"]) - len(merged)
+        results = [self._add_with_fallback(entry) for entry in merged.values()]
+        out = {
+            "added": sum(1 for r in results if r.get("ok")),
+            "failed": sum(1 for r in results if not r.get("ok")),
+            "results": results,
+            "cart": self.continente.cart(),
+            "skipped": len(listing["items"]) - len(merged),
+        }
 
         if mark_done:
-            bought = {t for r, e in zip(out["results"], merged.values())
-                      if r.get("ok") for t in e["terms"]}
+            bought = {t for r in results if r.get("ok") for t in r["terms"]}
             out["marked"] = self._mark_done(wanted, bought)
         else:
             out["marked"] = 0
         return out
+
+    def _add_with_fallback(self, entry: dict) -> dict:
+        """Põe um produto no carrinho, tentando os outros aceites se falhar.
+
+        Escolher três areias e ficar sem nenhuma porque a mais barata esgotou
+        seria um desperdício — se há alternativas, tenta-se a seguinte.
+        """
+        tried: list[dict] = []
+        candidates = [{"pid": entry["product"], "nome_continente": entry["produto"]}]
+        candidates += entry["alternativas"]
+
+        for n, candidate in enumerate(candidates):
+            try:
+                result = self.continente.add_to_cart(
+                    candidate["pid"], entry["quantity"]
+                )
+            except Exception as exc:  # noqa: BLE001 - a razão vai no resultado
+                result = {"ok": False, "pid": candidate["pid"], "reason": str(exc)}
+
+            result["terms"] = entry["terms"]
+            result["produto"] = (
+                (result.get("line") or {}).get("name")
+                or candidate.get("nome_continente") or candidate["pid"]
+            )
+            if result.get("ok"):
+                if n:
+                    result["fallback"] = (
+                        f"{tried[0]['produto']} não deu ({tried[0]['reason']})"
+                    )
+                return result
+            tried.append(result)
+
+        # Nenhum serviu: devolve-se a primeira tentativa, com nota das outras.
+        final = tried[0]
+        if len(tried) > 1:
+            final["tambem_falharam"] = [
+                {"produto": t["produto"], "reason": t.get("reason")}
+                for t in tried[1:]
+            ]
+        return final
 
     def _mark_done(self, items: list[dict], bought_terms: set[str]) -> int:
         """Põe o visto no Cookidoo nos itens que entraram mesmo no carrinho.

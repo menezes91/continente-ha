@@ -1,7 +1,7 @@
 {
   "domain": "continente",
   "name": "Continente",
-  "version": "0.2.0",
+  "version": "0.2.1",
   "documentation": "https://github.com/menezes91/continente-ha",
   "issue_tracker": "https://github.com/menezes91/continente-ha/issues",
   "codeowners": [

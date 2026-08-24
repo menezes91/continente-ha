@@ -368,9 +368,9 @@ function originBadge(it) {
   const parts = [];
   if (s.receita) {
     parts.push(recipes.length === 1 ? recipes[0]
-      : `${s.receita} receita${s.receita > 1 ? 's' : ''}`);
+      : `${recipes.length || s.receita} receitas`);
   }
-  if (s.extra) parts.push(s.extra > 1 ? `teu ×${s.extra}` : 'teu');
+  if (s.extra) parts.push('teu');
   if (!parts.length) return '';
   return `<span class="badge-src${s.receita ? ' recipe' : ''}"
     title="${esc(recipes.length ? recipes.join(', ') : 'escrito por ti')}"
@@ -378,12 +378,10 @@ function originBadge(it) {
 }
 
 function ownedBadge(it) {
-  if (it.owned) return '<span class="badge-owned">já tens</span>';
-  if (!it.owned_count) return '';
-  // Parcial: umas entradas marcadas, outras não. Ainda falta comprar.
-  return `<span class="badge-owned" title="${it.owned_count} das ${
-    it.count} entradas desta lista já estão marcadas">${
-    it.owned_count} de ${it.count} já tens</span>`;
+  // Só quando está mesmo tratado. Quantas entradas repetidas o Cookidoo tem
+  // por trás é problema nosso, não informação para quem faz as compras: um
+  // item que ainda falta comprar aparece na lista, e isso basta.
+  return it.owned ? '<span class="badge-owned">já tens</span>' : '';
 }
 
 function wire() {
@@ -531,6 +529,7 @@ function renderPanel(id) {
   const card = document.querySelector(`[data-item="${CSS.escape(id)}"]`);
   const panel = card && card.querySelector('.panel');
   if (!panel) return;
+  ensureDetails(it.options || [], CANDS[term] || [], id);
   panel.innerHTML = candsHtml(CANDS[term] || [], it.options || []) + searchHtml();
   panel.querySelectorAll('[data-pick]').forEach(b =>
     b.onclick = () => { hideTip(); pick(term, JSON.parse(b.dataset.pick)); });
@@ -572,15 +571,31 @@ function candsHtml(list, accepted = []) {
       >${has(c.pid) ? '✓' : '+'}</button>
     </div>`).join('');
 
-  // Aceites que não aparecem nas hipóteses de hoje continuam a contar.
-  const extra = accepted.filter(o => !list.some(c => c.pid === o.pid)).map(o => `
+  /* Aceites que não vêm nas hipóteses de hoje — a pesquisa muda de dia para
+     dia, e o produto escolhido pode não estar entre os primeiros. Mostram-se
+     como os outros, com a foto e o preço que o produto tem agora. */
+  const extra = accepted.filter(o => !list.some(c => c.pid === o.pid)).map(o => {
+    const d = DETAILS[o.pid] || null;
+    const c = {
+      pid: o.pid,
+      name: (d && d.name) || o.nome_continente || o.pid,
+      price: d && d.price,
+      image: d && d.image,
+      brand: d && d.brand,
+    };
+    return `
     <div class="cand on">
-      <span class="cand-main muted" style="padding:8px 10px">
-        <span class="t">${esc(o.nome_continente || o.pid)}<br><small>${esc(o.pid)}</small></span>
-      </span>
-      <button class="cand-add" data-drop='${esc(JSON.stringify({ pid: o.pid, name: o.nome_continente }))}'
+      <button class="cand-main" data-pick='${esc(JSON.stringify({ pid: c.pid, name: c.name }))}'
+              data-full='${esc(JSON.stringify(c))}' title="usar só este">
+        ${c.image ? `<img src="${esc(c.image)}" alt="" loading="lazy">` : '<img alt="">'}
+        <span class="t">${esc(c.name)}<br><small>${esc(c.pid)}${
+          d ? '' : ' · a carregar…'}</small></span>
+        <span class="price">${money(c.price)}</span>
+      </button>
+      <button class="cand-add" data-drop='${esc(JSON.stringify({ pid: c.pid, name: c.name }))}'
               title="tirar dos aceites">✓</button>
-    </div>`).join('');
+    </div>`;
+  }).join('');
 
   if (!list.length && !extra)
     return '<div class="cands"><span class="muted">Nada encontrado. Procura por outro termo:</span></div>';
@@ -599,6 +614,31 @@ const searchHtml = () => `<div class="searchbar">
 
 const DETAILS = {};   // pid -> detalhe, ou null quando não deu
 let tipTimer = null, tipPid = null;
+
+/* Vai buscar o detalhe dos produtos aceites que a pesquisa de hoje não trouxe,
+   para aparecerem com foto e preço como os outros. Redesenha quando chegam. */
+async function ensureDetails(options, list, panelId) {
+  const missing = options
+    .map(o => o.pid)
+    .filter(pid => pid !== '-' && DETAILS[pid] === undefined
+                   && !list.some(c => c.pid === pid));
+  if (!missing.length) return;
+
+  missing.forEach(pid => { DETAILS[pid] = null; });   // não pedir duas vezes
+  await Promise.all(missing.map(async pid => {
+    try {
+      const p = await api('/product/' + encodeURIComponent(pid));
+      DETAILS[pid] = {
+        name: p.name, brand: p.brand, price: p.price,
+        price_per_unit: p.price_per_unit, min_quantity: p.min_quantity,
+        step_quantity: p.step_quantity, primary_unit: p.primary_unit,
+        out_of_stock: p.out_of_stock,
+        image: Array.isArray(p.image) ? p.image[0] : p.image,
+      };
+    } catch (e) { DETAILS[pid] = null; }
+  }));
+  if (OPEN === panelId) renderPanel(panelId);
+}
 const big = u => u ? u.replace(/sw=\d+&sh=\d+/, 'sw=400&sh=400') : '';
 
 function tipHtml(c, d, loading) {
@@ -695,10 +735,22 @@ $('#send').onclick = async () => {
       method: 'POST', body: JSON.stringify({
         include_owned: false, mark_done: $('#markDone').checked })
     });
-    const lines = r.results.map(x => x.ok
-      ? `✅ ${esc((x.line && x.line.name) || x.pid)} — ${
-          x.line ? x.line.quantity + ' ' + (x.line.unit || '') : ''}`
-      : `❌ ${esc(x.pid)} — ${esc(x.reason || '')}`).join('\n');
+    // Sem o item da lista e o nome do produto, um "7721353 — esgotado" não
+    // diz nada a ninguém.
+    const lines = r.results.map(x => {
+      const de = esc((x.terms || []).join(', '));
+      const produto = esc(x.produto || (x.line && x.line.name) || x.pid);
+      if (x.ok) {
+        const qtd = x.line ? `${x.line.quantity} ${x.line.unit || ''}`.trim() : '';
+        const nota = x.fallback
+          ? `\n     ↳ ${esc(x.fallback)}; usou-se esta alternativa` : '';
+        return `✅ ${de} → ${produto}${qtd ? ' — ' + qtd : ''}${nota}`;
+      }
+      const outras = (x.tambem_falharam || [])
+        .map(t => `\n     ↳ ${esc(t.produto)} também não: ${esc(t.reason || '')}`)
+        .join('');
+      return `❌ ${de} → ${produto} — ${esc(x.reason || 'não entrou')}${outras}`;
+    }).join('\n');
     // Sem sessão iniciada o site aceita tudo — mas num carrinho de convidado,
     // que nunca aparece na conta. Melhor dizê-lo do que deixar acreditar.
     const anon = r.cart.authenticated === false
