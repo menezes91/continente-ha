@@ -9,6 +9,8 @@ from bs4 import BeautifulSoup
 
 from .config import BASE
 
+# Cada tile de produto traz um JSON com nome/id/preço/marca/categoria.
+_TILE_JSON = re.compile(r"data-product-tile-impression='([^']+)'")
 _PID_IN_URL = re.compile(r"-(\d{5,})\.html")
 _CSRF = re.compile(r'name="csrf_token"\s+value="([^"]+)"')
 _TOTAL_COUNT = re.compile(r'data-total-count="(\d+)"')
@@ -194,14 +196,32 @@ def parse_product_page(pdp_html: str, product_url: str) -> dict:
         info["out_of_stock"] = btn.get("data-outofstock") == "true"
 
     info.update(parse_quantity_rules(pdp_html))
-    info["price_per_unit"] = _price_per_unit(pdp_html)
+    info["price_per_unit"] = _price_per_unit(pdp_html, soup)
+    # A categoria não vem no ld+json do produto; está nas migalhas de pão.
+    trilho = [
+        a.get_text(strip=True)
+        for a in soup.select(".breadcrumbs-item a, .breadcrumbs-item")
+        if a.get_text(strip=True)
+    ]
+    vistos = list(dict.fromkeys(trilho))
+    info["category"] = "/".join(vistos[1:]) if len(vistos) > 1 else None
     return info
 
 
-def _price_per_unit(pdp_html: str) -> str | None:
-    """O "0,24€/un" que o site mostra por baixo do preço."""
-    m = re.search(r"\d+,\d{2}\s*€\s*/\s*\w+", html.unescape(pdp_html))
-    return re.sub(r"\s+", "", m.group(0)) if m else None
+def _price_per_unit(pdp_html: str, soup: BeautifulSoup | None = None) -> str | None:
+    """O "0,24€/un" que o site mostra por baixo do preço.
+
+    Tem de vir do elemento do preço secundário. Uma procura solta pelo padrão
+    apanhava antes o texto alternativo do selo PVPR — que é o preço por unidade
+    do preço *recomendado*, não do que se paga hoje.
+    """
+    soup = soup or BeautifulSoup(pdp_html, "lxml")
+    node = soup.select_one(".pwc-tile--price-secondary")
+    if node:
+        m = re.search(r"\d+[,.]\d{2}\s*€\s*/\s*\w+", node.get_text(" ", strip=True))
+        if m:
+            return re.sub(r"\s+", "", m.group(0))
+    return None
 
 
 def _to_float(value) -> float | None:

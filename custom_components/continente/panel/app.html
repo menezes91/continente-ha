@@ -180,6 +180,30 @@
     align-items: start;
   }
   @media (max-width: 880px) { .pv-grid { grid-template-columns: 1fr; } }
+
+  /* --- ficha do produto, no separador de preços --------------------- */
+  .pv-produto { display: flex; gap: 16px; align-items: flex-start;
+                margin-bottom: 14px; }
+  .pv-produto img, .pv-sem-foto {
+    width: 104px; height: 104px; flex: none; object-fit: contain;
+    background: #fff; border-radius: 10px; border: 1px solid var(--line);
+  }
+  .pv-sem-foto { display: flex; align-items: center; justify-content: center;
+                 background: var(--bg); color: var(--muted); font-size: 12px; }
+  .pv-meta { flex: 1; min-width: 0; }
+  .pv-marca { color: var(--muted); font-size: 13px; margin-top: 1px; }
+  .pv-tags { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; }
+  .pv-tag { font-size: 11px; padding: 2px 8px; border-radius: 20px;
+            background: var(--bg); color: var(--muted);
+            border: 1px solid var(--line); white-space: nowrap; }
+  .pv-tag.strong { color: var(--ink); font-weight: 600; }
+  .pv-tag.warn { background: var(--warn-bg); color: var(--warn);
+                 border-color: transparent; }
+  .pv-tag.off { background: transparent; color: var(--accent);
+                border-color: var(--accent); }
+  .pv-link { display: inline-block; margin-top: 8px; font-size: 13px;
+             color: var(--muted); text-decoration: none; }
+  .pv-link:hover { color: var(--accent); }
   /* o gráfico traz as suas próprias cores de série */
   :root { --series-1: #2a78d6; --context: #8b8f96; --grid: #e8e8e4;
           --surface-1: #ffffff; --up: #c2410c; }
@@ -986,7 +1010,29 @@ async function pvSelect(pid) {
   }
 }
 
+/* O histórico diz o preço; o resto — foto, marca, embalagem — vem do produto.
+   Pede-se uma vez por produto e redesenha-se quando chega. */
+async function pvFicha(pid) {
+  if (DETAILS[pid] !== undefined) return;
+  DETAILS[pid] = null;
+  try {
+    const p = await api('/product/' + encodeURIComponent(pid));
+    DETAILS[pid] = {
+      name: p.name, brand: p.brand, price: p.price, url: p.url,
+      category: p.category, price_per_unit: p.price_per_unit,
+      min_quantity: p.min_quantity, step_quantity: p.step_quantity,
+      primary_unit: p.primary_unit, out_of_stock: p.out_of_stock,
+      image: Array.isArray(p.image) ? p.image[0] : p.image,
+    };
+  } catch (e) { DETAILS[pid] = null; }
+  if (PV_CURRENT === pid) {
+    try { pvRenderDetail(await api('/prices/' + encodeURIComponent(pid))); }
+    catch (e) { /* fica o que já está no ecrã */ }
+  }
+}
+
 function pvRenderDetail(d) {
+  if (DETAILS[d.pid] === undefined) pvFicha(d.pid);
   const pts = d.points;
   const last = pts[pts.length - 1] || {};
   const v = d.variacao;
@@ -996,12 +1042,38 @@ function pvRenderDetail(d) {
   const desconto = last.preco_ref
     ? Math.round(100 * (1 - last.preco / last.preco_ref)) : null;
 
+  // O que se sabe do produto em si — foto, marca, embalagem, disponibilidade.
+  const p = DETAILS[d.pid];
+  const ficha = `
+    <div class="pv-produto">
+      ${p && p.image ? `<img src="${esc(p.image)}" alt="">`
+        : '<div class="pv-sem-foto">' + (p === undefined
+            ? '<span class="spin"></span>' : 'sem foto') + '</div>'}
+      <div class="pv-meta">
+        <h2 class="figure-title">${esc((p && p.name) || d.name || d.pid)}</h2>
+        ${p && p.brand ? `<div class="pv-marca">${esc(p.brand)}</div>` : ''}
+        ${p && p.category ? `<div class="figure-sub">${esc(p.category)}</div>` : ''}
+        <div class="pv-tags">
+          ${p && p.price_per_unit
+            ? `<span class="pv-tag strong">${esc(p.price_per_unit)}</span>` : ''}
+          ${p && (p.min_quantity > 1 || p.step_quantity > 1)
+            ? `<span class="pv-tag warn">vende-se de ${p.step_quantity || p.min_quantity} em ${
+                p.step_quantity || p.min_quantity}${p.primary_unit ? ' ' + esc(p.primary_unit) : ''}</span>`
+            : (p && p.primary_unit ? `<span class="pv-tag">à ${esc(p.primary_unit)}</span>` : '')}
+          ${p && p.out_of_stock ? '<span class="pv-tag off">sem stock</span>' : ''}
+          <span class="pv-tag">id ${esc(d.pid)}</span>
+        </div>
+        ${p && p.url ? `<a class="pv-link" href="${esc(p.url)}" target="_blank"
+           rel="noopener">ver no continente.pt →</a>` : ''}
+      </div>
+    </div>`;
+
   $('#pv-detail').innerHTML = `
     <figure>
+      ${ficha}
       <figcaption>
-        <h2 class="figure-title">${esc(d.name || d.pid)}</h2>
         <p class="figure-sub">Preço registado ${pts.length === 1 ? 'hoje'
-          : `entre ${pts[0].dia} e ${last.dia}`} · id ${esc(d.pid)}</p>
+          : `entre ${pts[0].dia} e ${last.dia}`}</p>
       </figcaption>
 
       <div class="kpis">
