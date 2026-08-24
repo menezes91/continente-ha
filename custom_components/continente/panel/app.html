@@ -155,26 +155,190 @@
                max-width: 190px; overflow: hidden; text-overflow: ellipsis;
                white-space: nowrap; display: inline-block; vertical-align: middle; }
   .badge-src.recipe { cursor: help; }
+
+  /* --- separadores ------------------------------------------------- */
+  .tabs { display: flex; gap: 2px; margin-left: 4px; }
+  .tab {
+    border: 0; background: none; color: var(--muted); font: inherit;
+    padding: 6px 12px; border-radius: 8px; cursor: pointer;
+  }
+  .tab:hover { color: var(--ink); background: var(--bg); }
+  .tab[aria-selected="true"] {
+    color: var(--ink); font-weight: 600; background: var(--bg);
+    box-shadow: inset 0 -2px 0 var(--accent);
+  }
+  .only-lista, .only-precos { display: flex; align-items: center; gap: 16px; }
+  /* `hidden` não vence um `display` explícito — é preciso dizê-lo. */
+  .only-lista[hidden], .only-precos[hidden], [hidden] { display: none !important; }
+  .pv-bar { display: flex; align-items: center; gap: 14px; padding: 16px 20px 0;
+            max-width: 1180px; margin: 0 auto; }
+  .pv-stats { color: var(--muted); font-size: 13px; flex: 1; }
+  /* O layout de duas colunas vivia no <main> da página separada; agora é aqui. */
+  .pv-grid {
+    max-width: 1180px; margin: 0 auto; padding: 18px 20px;
+    display: grid; grid-template-columns: 330px 1fr; gap: 18px;
+    align-items: start;
+  }
+  @media (max-width: 880px) { .pv-grid { grid-template-columns: 1fr; } }
+  /* o gráfico traz as suas próprias cores de série */
+  :root { --series-1: #2a78d6; --context: #8b8f96; --grid: #e8e8e4;
+          --surface-1: #ffffff; --up: #c2410c; }
+  @media (prefers-color-scheme: dark) {
+    :root { --series-1: #3987e5; --context: #7c8288; --grid: #2b2d31;
+            --surface-1: #1f2124; --up: #fb923c; }
+  }
+
+:root {
+    --bg: #f6f6f4; --card: #fff; --ink: #16181c; --muted: #6b7280;
+    --line: #e3e3df; --accent: #e30613;
+    --surface-1: #ffffff;          /* superfície do gráfico */
+    --series-1: #2a78d6;           /* o preço — a série que importa */
+    --context: #8b8f96;            /* o PVPR — contexto, de-emphasis */
+    --grid: #e8e8e4;
+    --ok: #0f7b3d; --ok-bg: #eaf6ee; --up: #c2410c;
+    --radius: 10px; --shadow: 0 1px 3px rgba(0,0,0,.07);
+  }
+@media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --bg: #17181a; --card: #1f2124; --ink: #e9eaec; --muted: #9aa0a6;
+      --line: #303236; --surface-1: #1f2124; --series-1: #3987e5;
+      --context: #7c8288; --grid: #2b2d31;
+      --ok: #4ade80; --ok-bg: #14301f; --up: #fb923c; --shadow: none;
+    }
+  }
+:root[data-theme="dark"] {
+    --bg: #17181a; --card: #1f2124; --ink: #e9eaec; --muted: #9aa0a6;
+    --line: #303236; --surface-1: #1f2124; --series-1: #3987e5;
+    --context: #7c8288; --grid: #2b2d31;
+    --ok: #4ade80; --ok-bg: #14301f; --up: #fb923c; --shadow: none;
+  }
+@media (max-width: 880px) { main { grid-template-columns: 1fr; } }
+
+  
+  
+  
+  #view-precos * { box-sizing: border-box; }
+  #view-precos { margin: 0; background: var(--bg); color: var(--ink);
+         font: 15px/1.5 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; }
+  #view-precos header { position: sticky; top: 0; z-index: 10; background: var(--card);
+           border-bottom: 1px solid var(--line); padding: 14px 20px;
+           display: flex; align-items: center; gap: 16px; flex-wrap: wrap; }
+  #view-precos h1 { font-size: 17px; margin: 0; font-weight: 650; }
+  #view-precos h1 span { color: var(--accent); }
+  #view-precos a.nav { color: var(--muted); text-decoration: none; font-size: 14px; }
+  #view-precos a.nav:hover { color: var(--ink); }
+  #view-precos .spacer { flex: 1; }
+  #view-precos button { font: inherit; cursor: pointer; border-radius: 8px; padding: 7px 13px;
+           border: 1px solid var(--line); background: var(--card); color: var(--ink); }
+  #view-precos button:hover:not(:disabled) { border-color: var(--muted); }
+  #view-precos button:disabled { opacity: .5; cursor: default; }
+  #view-precos button.primary { background: var(--accent); border-color: var(--accent);
+                   color: #fff; font-weight: 600; }
+  #view-precos main { max-width: 1180px; margin: 0 auto; padding: 20px;
+         display: grid; grid-template-columns: 330px 1fr; gap: 18px; align-items: start; }
+  
+  #view-precos .card { background: var(--card); border: 1px solid var(--line);
+          border-radius: var(--radius); box-shadow: var(--shadow); }
+  #view-precos .side { padding: 12px; max-height: 78vh; overflow: auto; }
+  #view-precos .side input { width: 100%; font: inherit; padding: 8px 10px; margin-bottom: 10px;
+                border: 1px solid var(--line); border-radius: 8px;
+                background: var(--bg); color: var(--ink); }
+  #view-precos .prod { display: flex; align-items: center; gap: 10px; padding: 9px 10px;
+          border-radius: 8px; cursor: pointer; width: 100%; text-align: left;
+          border: 1px solid transparent; background: none; color: var(--ink); }
+  #view-precos .prod:hover { background: var(--bg); }
+  #view-precos .prod[aria-current="true"] { border-color: var(--series-1); background: var(--bg); }
+  #view-precos .prod .n { flex: 1; min-width: 0; font-size: 14px; }
+  #view-precos .prod .n small { color: var(--muted); display: block; }
+  #view-precos .pill { font-size: 11px; padding: 2px 7px; border-radius: 20px; white-space: nowrap;
+          background: var(--ok-bg); color: var(--ok); }
+  #view-precos .pill.up { background: transparent; color: var(--up); border: 1px solid var(--up); }
+  #view-precos .pill.flat { background: var(--bg); color: var(--muted); border: 1px solid var(--line); }
+  #view-precos .detail { padding: 18px 20px 20px; }
+  #view-precos .figure-title { font-size: 16px; font-weight: 650; margin: 0; }
+  #view-precos .figure-sub { color: var(--muted); font-size: 13px; margin: 2px 0 16px; }
+  #view-precos .kpis { display: flex; gap: 26px; flex-wrap: wrap; margin-bottom: 6px; }
+  #view-precos .kpi .label { font-size: 12px; color: var(--muted); }
+  #view-precos .kpi .value { font-size: 26px; font-weight: 650; font-variant-numeric: tabular-nums;
+                line-height: 1.2; }
+  #view-precos .kpi .value.small { font-size: 17px; font-weight: 600; }
+  #view-precos .legend { display: flex; gap: 16px; font-size: 12px; color: var(--muted);
+            margin: 14px 0 2px; }
+  #view-precos .legend i { display: inline-block; width: 16px; height: 0; vertical-align: middle;
+              margin-right: 6px; border-top: 2px solid var(--series-1); }
+  #view-precos .legend i.ctx { border-top: 2px dashed var(--context); }
+  #view-precos figure { margin: 0; }
+  #view-precos .chart-wrap { position: relative; overflow-x: auto; overflow-y: hidden; }
+  #view-precos svg { display: block; touch-action: none; }
+  #view-precos .grid line { stroke: var(--grid); stroke-width: 1; }
+  #view-precos .axis text { fill: var(--muted); font-size: 11px; }
+  #view-precos .serie { fill: none; stroke: var(--series-1); stroke-width: 2;
+           stroke-linejoin: round; stroke-linecap: round; }
+  #view-precos .ctxline { fill: none; stroke: var(--context); stroke-width: 2;
+             stroke-dasharray: 5 4; }
+  #view-precos .dot { fill: var(--series-1); stroke: var(--surface-1); stroke-width: 2; }
+  #view-precos .crosshair { stroke: var(--muted); stroke-width: 1; stroke-dasharray: 3 3; }
+  #view-precos .endlabel { fill: var(--ink); font-size: 12px; font-weight: 600; }
+  #view-precos .tip { position: absolute; left: 0; top: 0; pointer-events: none; background: var(--card);
+         border: 1px solid var(--line); border-radius: 8px; padding: 8px 10px;
+         font-size: 12px; box-shadow: 0 6px 20px rgba(0,0,0,.18);
+         opacity: 0; transition: opacity .1s; white-space: nowrap; }
+  #view-precos .tip.on { opacity: 1; }
+  #view-precos .tip b { font-size: 14px; }
+  #view-precos .note { background: var(--bg); border: 1px solid var(--line); border-radius: 8px;
+          padding: 10px 12px; font-size: 13px; color: var(--muted); margin-top: 16px; }
+  #view-precos table { border-collapse: collapse; width: 100%; font-size: 13px; margin-top: 10px; }
+  #view-precos th, #view-precos td { text-align: right; padding: 5px 8px; border-bottom: 1px solid var(--line); }
+  #view-precos th:first-child, #view-precos td:first-child { text-align: left; }
+  #view-precos th { color: var(--muted); font-weight: 550; }
+  #view-precos details { margin-top: 14px; }
+  #view-precos summary { cursor: pointer; color: var(--muted); font-size: 13px; }
+  #view-precos .empty { text-align: center; padding: 60px 20px; color: var(--muted); }
+  #view-precos .msg { padding: 10px 12px; border-radius: 8px; border: 1px solid var(--line);
+         background: var(--card); margin-bottom: 14px; font-size: 14px; }
+
 </style>
 </head>
 <body>
 <header>
   <h1>Cookidoo <span>→</span> Continente</h1>
-  <a class="navlink" href="/api/continente/panel/precos.html">preços →</a>
-  <div class="counts" id="counts"></div>
+  <div class="tabs" role="tablist">
+    <button class="tab" id="tab-lista" role="tab" aria-selected="true">Lista</button>
+    <button class="tab" id="tab-precos" role="tab" aria-selected="false">Preços</button>
+  </div>
+  <div class="counts only-lista" id="counts"></div>
   <div class="spacer"></div>
+  <div class="only-lista">
   <label class="toggle" title="Esconde os que estão em &quot;Itens que tem&quot; no Cookidoo. Os que já mapeaste ficam sempre à vista.">
     <input type="checkbox" id="hideOwned" checked> esconder os itens que tens</label>
   <label class="toggle" title="Ao enviar, passa para &quot;Itens que tem&quot; no Cookidoo os que entraram mesmo no carrinho.">
     <input type="checkbox" id="markDone" checked> marcar como tens, ao enviar</label>
   <button id="reload" title="Vai buscar a lista ao Cookidoo outra vez">Recarregar</button>
   <button id="send" class="primary">Enviar para o carrinho</button>
+  </div>
 </header>
 
 <main>
+<section id="view-lista">
   <div id="msg"></div>
   <div id="list"><div class="empty"><span class="spin"></span> A ler a lista…</div></div>
+</section>
 </main>
+
+<section id="view-precos" hidden>
+  <div class="pv-bar"><span id="pv-stats" class="pv-stats"></span><button id="pv-snap" class="primary">Registar preços de hoje</button></div>
+  <div class="pv-grid">
+  <aside class="card side">
+    <input id="pv-filter" placeholder="filtrar produtos…" autocomplete="off">
+    <div id="pv-list"><div class="empty">a carregar…</div></div>
+  </aside>
+
+  <section class="card detail" id="pv-detail">
+    <div class="empty">Escolhe um produto à esquerda.</div>
+  </section>
+</div>
+</section>
+
 
 <div id="tip"></div>
 
@@ -766,6 +930,266 @@ $('#send').onclick = async () => {
   } catch (e) { say(esc(e.message), 'err'); }
   render();
 };
+
+let PV_PRODUCTS = [], PV_CURRENT = null;
+
+const pvEur = v => v == null ? '—' : v.toFixed(2).replace('.', ',') + '€';
+const pvDay = d => d.slice(8, 10) + '/' + d.slice(5, 7);
+
+async function pvLoad() {
+  try {
+    const r = await api('/prices/tracked');
+    PV_PRODUCTS = r.products;
+    const s = r.stats;
+    $('#pv-stats').textContent = s.produtos
+      ? `${s.produtos} produtos · ${s.dias} ${s.dias === 1 ? 'dia' : 'dias'} desde ${s.desde}`
+      : 'sem registos';
+    pvRenderList();
+    if (PV_PRODUCTS.length && !PV_CURRENT) pvSelect(PV_PRODUCTS[0].pid);
+  } catch (e) {
+    $('#pv-list').innerHTML = `<div class="empty">${esc(e.message)}</div>`;
+  }
+}
+
+function pvRenderList() {
+  const q = $('#pv-filter').value.trim().toLowerCase();
+  const rows = PV_PRODUCTS.filter(p => !q || (p.nome || '').toLowerCase().includes(q));
+  if (!rows.length) {
+    $('#pv-list').innerHTML = `<div class="empty">${PV_PRODUCTS.length
+      ? 'Nada corresponde.' : 'Ainda não há registos. Carrega em “Registar preços de hoje”.'}</div>`;
+    return;
+  }
+  $('#pv-list').innerHTML = rows.map(p => {
+    const v = p.variacao;
+    const cls = v == null || v === 0 ? 'flat' : v < 0 ? '' : 'up';
+    const txt = v == null || v === 0 ? '—' : (v > 0 ? '+' : '') + v + '%';
+    const promo = p.preco_ref ? ` · PVPR ${pvEur(p.preco_ref)}` : '';
+    return `<button class="prod" data-pid="${esc(p.pid)}"
+              aria-current="${p.pid === PV_CURRENT}">
+      <span class="n">${esc(p.nome || p.pid)}
+        <small>${pvEur(p.preco)}${promo}</small></span>
+      <span class="pill ${cls}">${txt}</span>
+    </button>`;
+  }).join('');
+  document.querySelectorAll('.prod').forEach(b =>
+    b.onclick = () => pvSelect(b.dataset.pid));
+}
+
+async function pvSelect(pid) {
+  PV_CURRENT = pid;
+  pvRenderList();
+  $('#pv-detail').innerHTML = '<div class="empty">a carregar…</div>';
+  try {
+    pvRenderDetail(await api('/prices/' + encodeURIComponent(pid)));
+  } catch (e) {
+    $('#pv-detail').innerHTML = `<div class="empty">${esc(e.message)}</div>`;
+  }
+}
+
+function pvRenderDetail(d) {
+  const pts = d.points;
+  const last = pts[pts.length - 1] || {};
+  const v = d.variacao;
+  const vTxt = v == null || pts.length < 2 ? '—' : (v > 0 ? '+' : '') + v + '%';
+  const vColor = v == null || v === 0 || pts.length < 2 ? 'var(--muted)'
+    : v < 0 ? 'var(--ok)' : 'var(--up)';
+  const desconto = last.preco_ref
+    ? Math.round(100 * (1 - last.preco / last.preco_ref)) : null;
+
+  $('#pv-detail').innerHTML = `
+    <figure>
+      <figcaption>
+        <h2 class="figure-title">${esc(d.name || d.pid)}</h2>
+        <p class="figure-sub">Preço registado ${pts.length === 1 ? 'hoje'
+          : `entre ${pts[0].dia} e ${last.dia}`} · id ${esc(d.pid)}</p>
+      </figcaption>
+
+      <div class="kpis">
+        <div class="kpi"><div class="label">preço atual</div>
+          <div class="value">${pvEur(d.atual)}</div></div>
+        <div class="kpi"><div class="label">variação no período</div>
+          <div class="value small" style="color:${vColor}">${vTxt}</div></div>
+        <div class="kpi"><div class="label">mínimo registado</div>
+          <div class="value small">${pvEur(d.minimo)}</div></div>
+        <div class="kpi"><div class="label">máximo registado</div>
+          <div class="value small">${pvEur(d.maximo)}</div></div>
+        ${last.preco_ref ? `<div class="kpi"><div class="label">PVPR</div>
+          <div class="value small" style="color:var(--ok)">${pvEur(last.preco_ref)}
+          <span style="font-size:12px">−${desconto}%</span></div></div>` : ''}
+      </div>
+
+      ${pts.some(p => p.preco_ref != null) ? `<div class="legend">
+        <span><i></i>preço pago</span>
+        <span><i class="ctx"></i>PVPR — só nos dias em promoção</span></div>` : ''}
+
+      <div class="chart-wrap" id="pv-wrap">${pvChart(pts)}<div class="tip" id="pv-tip"></div></div>
+
+      ${pts.length < 2 ? `<div class="note">
+        O histórico começa aqui. O continente.pt não publica preços passados — o
+        único valor anterior que dá é o PVPR dos produtos em promoção. A partir
+        de um segundo registo o gráfico ganha linha.</div>` : ''}
+
+      <details><summary>Ver os números em tabela</summary>
+        <table><thead><tr><th>dia</th><th>preço</th><th>PVPR</th><th>por unidade</th></tr></thead>
+        <tbody>${pts.slice().reverse().map(p => `<tr>
+          <td>${p.dia}</td><td>${pvEur(p.preco)}</td>
+          <td>${pvEur(p.preco_ref)}</td><td>${esc(p.preco_unidade || '—')}</td>
+        </tr>`).join('')}</tbody></table>
+      </details>
+    </figure>`;
+
+  if (pts.length) pvWireChart(pts);
+}
+
+/* ---- o gráfico, em SVG ------------------------------------------------- */
+
+const PV_M = { t: 18, r: 58, b: 30, l: 46 };   // margem direita p/ o rótulo final
+const PV_H = 260;
+
+function pvGeom(pts) {
+  const w = Math.max(420, Math.min(760, 90 + pts.length * 46));
+  const iw = w - PV_M.l - PV_M.r, ih = PV_H - PV_M.t - PV_M.b;
+  const vals = pts.flatMap(p => [p.preco, p.preco_ref].filter(v => v != null));
+  let lo = Math.min(...vals), hi = Math.max(...vals);
+  if (lo === hi) { lo -= Math.max(0.1, lo * 0.06); hi += Math.max(0.1, hi * 0.06); }
+  const pad = (hi - lo) * 0.15; lo -= pad; hi += pad;
+  const x = i => PV_M.l + (pts.length === 1 ? iw / 2 : (i / (pts.length - 1)) * iw);
+  const y = v => PV_M.t + ih - ((v - lo) / (hi - lo)) * ih;
+  return { w, iw, ih, lo, hi, x, y };
+}
+
+function pvChart(pts) {
+  if (!pts.length) return '';
+  const g = pvGeom(pts);
+  const ticks = 4;
+  const gridY = Array.from({ length: ticks + 1 }, (_, i) => g.lo + (i / ticks) * (g.hi - g.lo));
+
+  /* Um traço por troço contínuo de dados. O PVPR só existe nos dias em que o
+     produto esteve em promoção; uma única polyline saltaria por cima dos dias
+     sem promoção e desenharia uma continuidade que não houve. */
+  const segments = sel => {
+    const out = []; let run = [];
+    pts.forEach((p, i) => {
+      if (p[sel] == null) { if (run.length) out.push(run); run = []; }
+      else run.push(`${g.x(i)},${g.y(p[sel])}`);
+    });
+    if (run.length) out.push(run);
+    return out;
+  };
+  const draw = (sel, cls) => segments(sel).map(seg => seg.length > 1
+    ? `<polyline class="${cls}" points="${seg.join(' ')}"/>`
+    : `<circle class="dot" cx="${seg[0].split(',')[0]}" cy="${seg[0].split(',')[1]}"
+               r="3" style="fill:var(--context)"/>`).join('');
+
+  const hasRef = pts.some(p => p.preco_ref != null);
+  const last = pts[pts.length - 1];
+
+  // Com um só registo, um ponto sozinho lê-se melhor do que uma linha de zero
+  // comprimento; a partir de dois, a linha é a forma certa.
+  const serie = pts.length > 1 ? draw('preco', 'serie') : '';
+  const ctx = hasRef && pts.length > 1 ? draw('preco_ref', 'ctxline') : '';
+  const refDot = hasRef && pts.length === 1
+    ? `<line class="ctxline" x1="${PV_M.l}" x2="${g.w - PV_M.r}"
+             y1="${g.y(last.preco_ref)}" y2="${g.y(last.preco_ref)}"/>
+       <text class="axis" x="${g.w - PV_M.r + 6}" y="${g.y(last.preco_ref) + 4}"
+             style="fill:var(--context)">${pvEur(last.preco_ref)}</text>` : '';
+
+  const dots = pts.map((p, i) =>
+    `<circle class="dot" cx="${g.x(i)}" cy="${g.y(p.preco)}" r="${pts.length > 20 ? 3.5 : 5}"/>`
+  ).join('');
+
+  const labels = pts.map((p, i) => {
+    const step = Math.ceil(pts.length / 7);
+    return (i % step === 0 || i === pts.length - 1)
+      ? `<text class="axis" x="${g.x(i)}" y="${PV_H - 10}" text-anchor="middle">${pvDay(p.dia)}</text>`
+      : '';
+  }).join('');
+
+  return `<svg width="${g.w}" height="${PV_H}" role="img"
+       aria-label="Evolução do preço, ${pts.length} registos">
+    <g class="grid">${gridY.map(v =>
+      `<line x1="${PV_M.l}" x2="${g.w - PV_M.r}" y1="${g.y(v)}" y2="${g.y(v)}"/>`).join('')}</g>
+    <g class="axis">${gridY.map(v =>
+      `<text x="${PV_M.l - 8}" y="${g.y(v) + 4}" text-anchor="end">${pvEur(v)}</text>`).join('')}</g>
+    ${refDot}${ctx}${serie}${dots}
+    <text class="endlabel" x="${g.x(pts.length - 1) + 10}"
+          y="${g.y(last.preco) + 4}">${pvEur(last.preco)}</text>
+    <g class="axis">${labels}</g>
+    <line class="crosshair" id="pv-cross" y1="${PV_M.t}" y2="${PV_H - PV_M.b}" style="display:none"/>
+    <rect id="pv-hit" x="${PV_M.l}" y="${PV_M.t}" width="${g.iw}" height="${g.ih}" fill="transparent"/>
+  </svg>`;
+}
+
+function pvWireChart(pts) {
+  const svg = $('#pv-wrap svg'), hit = $('#pv-hit'), cross = $('#pv-cross'), tip = $('#pv-tip');
+  if (!svg || !hit) return;
+  const g = pvGeom(pts);
+
+  const move = ev => {
+    const r = svg.getBoundingClientRect();
+    const px = (ev.touches ? ev.touches[0].clientX : ev.clientX) - r.left;
+    let best = 0, bd = Infinity;
+    pts.forEach((p, i) => { const d = Math.abs(g.x(i) - px); if (d < bd) { bd = d; best = i; } });
+    const p = pts[best];
+    cross.style.display = '';
+    cross.setAttribute('x1', g.x(best)); cross.setAttribute('x2', g.x(best));
+    tip.innerHTML = `${p.dia}<br><b>${pvEur(p.preco)}</b>${
+      p.preco_ref ? `<br><span style="color:var(--context)">PVPR ${pvEur(p.preco_ref)}</span>` : ''}${
+      p.preco_unidade ? `<br>${esc(p.preco_unidade)}` : ''}`;
+    tip.classList.add('on');
+    const tw = tip.offsetWidth;
+    tip.style.left = Math.max(0, Math.min(g.x(best) + 12, g.w - tw - 4)) + 'px';
+    tip.style.top = (g.y(p.preco) - 14) + 'px';
+  };
+  const leave = () => { cross.style.display = 'none'; tip.classList.remove('on'); };
+
+  hit.addEventListener('mousemove', move);
+  hit.addEventListener('mouseleave', leave);
+  hit.addEventListener('touchmove', move, { passive: true });
+  hit.addEventListener('touchend', leave);
+}
+
+/* ---- barra de topo ----------------------------------------------------- */
+
+$('#pv-filter').oninput = pvRenderList;
+$('#pv-snap').onclick = async () => {
+  const b = $('#pv-snap'); b.disabled = true; b.textContent = 'a registar…';
+  try {
+    const r = await api('/prices/snapshot', { method: 'POST' });
+    const extra = r.problems ? ` (${r.problems.length} avisos)` : '';
+    $('main').insertAdjacentHTML('beforebegin',
+      `<div class="msg" style="max-width:1180px;margin:14px auto 0">
+        ${r.recorded} preços registados em ${r.day}${extra}.</div>`);
+    setTimeout(() => document.querySelector('.msg')?.remove(), 6000);
+    await pvLoad();
+    if (PV_CURRENT) pvSelect(PV_CURRENT);
+  } catch (e) { alert(e.message); }
+  b.disabled = false; b.textContent = 'Registar preços de hoje';
+};
+
+/* ---- separadores --------------------------------------------------- */
+
+function mostrar(qual) {
+  const precos = qual === 'precos';
+  $('#view-lista').hidden = precos;
+  $('#view-precos').hidden = !precos;
+  $('#tab-lista').setAttribute('aria-selected', String(!precos));
+  $('#tab-precos').setAttribute('aria-selected', String(precos));
+  document.querySelectorAll('.only-lista').forEach(e => { e.hidden = precos; });
+  $('#send').hidden = precos;
+  $('#reload').hidden = precos;
+  hideTip();
+  // Os preços só se vão buscar quando abres o separador.
+  if (precos && !PV_PRODUCTS.length) pvLoad();
+  try { localStorage.setItem('continente-tab', qual); } catch (e) {}
+}
+
+$('#tab-lista').onclick = () => mostrar('lista');
+$('#tab-precos').onclick = () => mostrar('precos');
+
+let tabInicial = 'lista';
+try { tabInicial = localStorage.getItem('continente-tab') || 'lista'; } catch (e) {}
+mostrar(tabInicial);
 
 load();
 </script>

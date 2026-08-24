@@ -55,7 +55,6 @@ class PanelPageView(HomeAssistantView):
     # Lista fechada: nada de servir ficheiros arbitrários a partir do disco.
     TYPES = {
         "app.html": "text/html",
-        "precos.html": "text/html",
         "continente-panel.js": "text/javascript",
     }
 
