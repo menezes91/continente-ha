@@ -1,0 +1,34 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "Continente",
+        "description": "As credenciais do continente.pt. As do Cookidoo são opcionais — sem elas ficas com o carrinho e os preços, mas não com a lista de compras.",
+        "data": {
+          "continente_email": "Email do Continente",
+          "continente_password": "Password do Continente",
+          "cookidoo_email": "Email do Cookidoo (opcional)",
+          "cookidoo_password": "Password do Cookidoo (opcional)"
+        }
+      }
+    },
+    "error": {
+      "invalid_auth": "O Continente recusou estas credenciais.",
+      "invalid_cookidoo": "O Cookidoo recusou estas credenciais.",
+      "cannot_connect": "Não consegui chegar ao site."
+    },
+    "abort": {
+      "already_configured": "Esta conta já está configurada."
+    }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "title": "Continente",
+        "data": {
+          "scan_minutes": "Minutos entre leituras"
+        }
+      }
+    }
+  }
+}

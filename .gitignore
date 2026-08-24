@@ -1,0 +1,13 @@
+__pycache__/
+*.pyc
+.env
+_teste_dados/
+
+# Dados de execução — não pertencem ao repositório.
+sessao.json
+mapeamento_cookidoo.csv
+meus_produtos_continente.csv
+precos.db
+cookidoo_cookies.pickle
+_v/
+_verifica/

@@ -1,0 +1,700 @@
+<!doctype html>
+<html lang="pt">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Cookidoo → Continente</title>
+<style>
+  :root {
+    --bg: #f6f6f4; --card: #fff; --ink: #16181c; --muted: #6b7280;
+    --line: #e3e3df; --accent: #e30613; --ok: #0f7b3d; --ok-bg: #eaf6ee;
+    --warn: #92400e; --warn-bg: #fdf3e3; --off: #9aa0a6;
+    --radius: 10px; --shadow: 0 1px 3px rgba(0,0,0,.07);
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #17181a; --card: #1f2124; --ink: #e9eaec; --muted: #9aa0a6;
+      --line: #303236; --ok: #4ade80; --ok-bg: #14301f;
+      --warn: #fbbf24; --warn-bg: #33280f; --shadow: none;
+    }
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; background: var(--bg); color: var(--ink);
+    font: 15px/1.5 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  }
+  header {
+    position: sticky; top: 0; z-index: 10; background: var(--card);
+    border-bottom: 1px solid var(--line); padding: 14px 20px;
+    display: flex; align-items: center; gap: 16px; flex-wrap: wrap;
+  }
+  h1 { font-size: 17px; margin: 0; font-weight: 650; letter-spacing: -.01em; }
+  h1 span { color: var(--accent); }
+  .counts { display: flex; gap: 14px; font-size: 13px; color: var(--muted); }
+  .counts b { color: var(--ink); font-variant-numeric: tabular-nums; }
+  .spacer { flex: 1; }
+  button {
+    font: inherit; cursor: pointer; border-radius: 8px; padding: 7px 13px;
+    border: 1px solid var(--line); background: var(--card); color: var(--ink);
+  }
+  button:hover:not(:disabled) { border-color: var(--muted); }
+  button:disabled { opacity: .5; cursor: default; }
+  button.primary {
+    background: var(--accent); border-color: var(--accent); color: #fff;
+    font-weight: 600;
+  }
+  button.primary:hover:not(:disabled) { filter: brightness(1.08); }
+  main { max-width: 900px; margin: 0 auto; padding: 20px; }
+  .msg {
+    padding: 12px 14px; border-radius: var(--radius); margin-bottom: 16px;
+    border: 1px solid var(--line); background: var(--card); white-space: pre-wrap;
+  }
+  .msg.err { border-color: var(--accent); }
+  .msg.ok { background: var(--ok-bg); border-color: var(--ok); }
+  .group { margin: 22px 0 10px; font-size: 12px; letter-spacing: .07em;
+           text-transform: uppercase; color: var(--muted); font-weight: 600; }
+  .item {
+    background: var(--card); border: 1px solid var(--line);
+    border-radius: var(--radius); margin-bottom: 8px; box-shadow: var(--shadow);
+    overflow: hidden;
+  }
+  .row { display: flex; align-items: center; gap: 12px; padding: 12px 14px; }
+  .dot { width: 8px; height: 8px; border-radius: 50%; flex: none; }
+  .dot.mapeado { background: var(--ok); }
+  .dot.por_decidir { background: var(--warn); }
+  .dot.ignorado { background: var(--off); }
+  .name { font-weight: 550; }
+  .amount { color: var(--muted); font-size: 13px; margin-left: 6px; }
+  .target { font-size: 13px; color: var(--muted); margin-top: 2px; }
+  .target b { color: var(--ink); font-weight: 550; }
+  .target.link { cursor: help; }
+  .target.link:hover b { color: var(--accent); }
+  .grow { flex: 1; min-width: 0; }
+  .qty {
+    width: 58px; font: inherit; padding: 5px 7px; text-align: center;
+    border: 1px solid var(--line); border-radius: 7px;
+    background: var(--bg); color: var(--ink);
+  }
+  .panel { border-top: 1px solid var(--line); padding: 12px 14px;
+           background: var(--bg); }
+  .cands { display: grid; gap: 7px; }
+  .cand {
+    display: flex; align-items: center; gap: 11px; padding: 8px 10px;
+    border: 1px solid var(--line); border-radius: 8px; background: var(--card);
+    cursor: pointer; text-align: left; width: 100%;
+  }
+  .cand:hover { border-color: var(--accent); }
+  .cand.on { border-color: var(--ok); }
+  .cand img { width: 40px; height: 40px; object-fit: contain; flex: none;
+              background: #fff; border-radius: 5px; }
+  .cand .t { flex: 1; min-width: 0; }
+  .cand .t small { color: var(--muted); }
+  .cand-main { display: flex; align-items: center; gap: 11px; flex: 1;
+               min-width: 0; border: none; background: none; padding: 0;
+               text-align: left; color: inherit; cursor: pointer; }
+  .cand-add { flex: none; width: 30px; height: 30px; padding: 0; font-size: 15px;
+              border-radius: 7px; line-height: 1; }
+  .cand.on .cand-add { color: var(--ok); border-color: var(--ok); }
+  .hint-multi { margin-top: 8px; font-size: 12px; color: var(--ok); }
+  .pick-basis { font-size: 11px; padding: 1px 7px; border-radius: 20px;
+                background: var(--ok-bg); color: var(--ok); margin-left: 4px;
+                cursor: help; }
+  .price { font-weight: 600; white-space: nowrap; font-variant-numeric: tabular-nums; }
+  .tag { font-size: 11px; padding: 2px 7px; border-radius: 20px;
+         background: var(--ok-bg); color: var(--ok); white-space: nowrap; }
+  .searchbar { display: flex; gap: 8px; margin-top: 10px; }
+  .searchbar input {
+    flex: 1; font: inherit; padding: 7px 10px; border-radius: 8px;
+    border: 1px solid var(--line); background: var(--card); color: var(--ink);
+  }
+  .muted { color: var(--muted); }
+  .empty { text-align: center; padding: 50px 20px; color: var(--muted); }
+  .spin { display: inline-block; width: 13px; height: 13px; flex: none;
+          border: 2px solid var(--line); border-top-color: var(--accent);
+          border-radius: 50%; animation: r .7s linear infinite; }
+  @keyframes r { to { transform: rotate(360deg); } }
+
+  /* Pré-visualização do produto ao passar o rato. */
+  #tip {
+    position: fixed; z-index: 100; width: 270px; pointer-events: none;
+    background: var(--card); border: 1px solid var(--line);
+    border-radius: var(--radius); box-shadow: 0 8px 28px rgba(0,0,0,.22);
+    padding: 12px; opacity: 0; transform: translateY(4px);
+    transition: opacity .12s ease, transform .12s ease;
+  }
+  #tip.on { opacity: 1; transform: none; }
+  #tip img {
+    width: 100%; height: 175px; object-fit: contain; background: #fff;
+    border-radius: 7px; margin-bottom: 9px;
+  }
+  #tip .tname { font-weight: 600; line-height: 1.35; }
+  #tip .tbrand { color: var(--muted); font-size: 12px; margin-top: 1px; }
+  #tip .tprice { font-size: 19px; font-weight: 650; margin: 7px 0 2px; }
+  #tip dl { display: grid; grid-template-columns: auto 1fr; gap: 3px 10px;
+            margin: 9px 0 0; font-size: 12px; border-top: 1px solid var(--line);
+            padding-top: 8px; }
+  #tip dt { color: var(--muted); }
+  #tip dd { margin: 0; text-align: right; }
+  #tip .note {
+    margin-top: 8px; padding: 6px 8px; border-radius: 6px; font-size: 12px;
+    background: var(--warn-bg); color: var(--warn);
+  }
+  #tip .off { color: var(--accent); }
+  .toggle { display: flex; align-items: center; gap: 6px; font-size: 13px;
+            color: var(--muted); cursor: pointer; user-select: none; }
+  .navlink { color: var(--muted); text-decoration: none; font-size: 14px; }
+  .navlink:hover { color: var(--ink); }
+  .item.owned .name { text-decoration: line-through; opacity: .65; }
+  .badge-owned { font-size: 11px; padding: 2px 7px; border-radius: 20px;
+                 background: var(--bg); color: var(--muted);
+                 border: 1px solid var(--line); }
+  .badge-src { font-size: 11px; padding: 2px 7px; border-radius: 20px;
+               color: var(--muted); background: var(--bg); margin-left: 4px;
+               max-width: 190px; overflow: hidden; text-overflow: ellipsis;
+               white-space: nowrap; display: inline-block; vertical-align: middle; }
+  .badge-src.recipe { cursor: help; }
+</style>
+</head>
+<body>
+<header>
+  <h1>Cookidoo <span>→</span> Continente</h1>
+  <a class="navlink" href="/api/continente/panel/precos.html">preços →</a>
+  <div class="counts" id="counts"></div>
+  <div class="spacer"></div>
+  <label class="toggle" title="Esconde os que estão em &quot;Itens que tem&quot; no Cookidoo. Os que já mapeaste ficam sempre à vista.">
+    <input type="checkbox" id="hideOwned" checked> esconder os itens que tens</label>
+  <label class="toggle" title="Ao enviar, passa para &quot;Itens que tem&quot; no Cookidoo os que entraram mesmo no carrinho.">
+    <input type="checkbox" id="markDone" checked> marcar como tens, ao enviar</label>
+  <button id="reload" title="Vai buscar a lista ao Cookidoo outra vez">Recarregar</button>
+  <button id="send" class="primary">Enviar para o carrinho</button>
+</header>
+
+<main>
+  <div id="msg"></div>
+  <div id="list"><div class="empty"><span class="spin"></span> A ler a lista…</div></div>
+</main>
+
+<div id="tip"></div>
+
+<script>
+const API = '/api/continente';   // as rotas da integração
+const $ = s => document.querySelector(s);
+// O controller, não /checkout/carrinho/: só ele prepara o estado antes de lá
+// chegar — o link direto devolve a homepage.
+const CART_URL = 'https://www.continente.pt/on/demandware.store/Sites-continente-Site/default/Cart-Show';
+let ITEMS = [];            // a lista, mantida em memória
+let CANDS = {};            // termo -> hipóteses
+let PENDING = new Set();   // termos cujas hipóteses estão a ser procuradas
+let OPEN = null;
+
+const api = async (path, opts = {}) => {
+  const r = await fetch(API + path, {
+    headers: { 'Content-Type': 'application/json' }, ...opts
+  });
+  const body = await r.json().catch(() => ({}));
+  if (!r.ok) throw new Error(body.detail || `${r.status} ${r.statusText}`);
+  return body;
+};
+
+const say = (t, kind = '') => {
+  $('#msg').innerHTML = t ? `<div class="msg ${kind}">${t}</div>` : '';
+};
+const money = v => v == null ? '' : v.toFixed(2).replace('.', ',') + '€';
+const esc = s => (s ?? '').replace(/[&<>"']/g, c =>
+  ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+/* Os nomes repetem-se na lista — há quatro "cebola", vindas de receitas
+   diferentes e uma escrita por ti. Cada linha identifica-se pelo `id` do item;
+   o mapeamento é que é por nome, e vale para todas as linhas com esse nome. */
+const byId = id => ITEMS.find(i => i.id === id);
+const norm = s => (s || '').trim().toLowerCase().normalize('NFKD')
+  .replace(/[̀-ͯ]/g, '').replace(/[^a-z0-9\s]/g, ' ')
+  .replace(/\s+/g, ' ').trim();
+
+/* Um item pronto e marcado no Cookidoo continua à vista, mas não se compra. */
+const willBuy = it => it.status === 'mapeado' && !it.owned;
+/* O filtro nunca esconde o que já mapeaste. */
+const visible = it => !($('#hideOwned').checked && it.owned && it.status !== 'mapeado');
+
+async function load(refresh = false) {
+  say('');
+  $('#list').innerHTML = `<div class="empty"><span class="spin"></span> ${
+    refresh ? 'A ler a lista do Cookidoo…' : 'A carregar…'}</div>`;
+  try {
+    const data = await api('/sync/list' + (refresh ? '?refresh=true' : ''));
+    ITEMS = data.items;
+    render();
+    prefetch();
+  } catch (e) {
+    $('#list').innerHTML = '';
+    say(`Não consegui ler a lista: ${esc(e.message)}`, 'err');
+  }
+}
+
+/* Hipóteses para os itens que interessam decidir. Cada uma é uma pesquisa no
+   Continente, por isso só se adiantam os que estão à vista e por decidir. */
+async function prefetch() {
+  // Nomes distintos: quatro linhas de "cebola" são uma só pesquisa.
+  const todo = [...new Set(ITEMS
+    .filter(it => it.status === 'por_decidir' && visible(it) && !CANDS[it.name])
+    .map(it => it.name))].slice(0, 25);
+  if (!todo.length) return;
+
+  todo.forEach(t => PENDING.add(t));
+  paintPending();
+  try {
+    Object.assign(CANDS, await api('/sync/candidates', {
+      method: 'POST', body: JSON.stringify({ terms: todo })
+    }));
+  } catch (e) {
+    todo.forEach(t => { if (!CANDS[t]) CANDS[t] = null; });  // null = falhou
+  }
+  todo.forEach(t => PENDING.delete(t));
+  paintPending();
+  const open = OPEN && byId(OPEN);
+  if (open && todo.includes(open.name)) renderPanel(OPEN);
+}
+
+/* Atualiza só as linhas de estado das hipóteses, sem redesenhar a lista. */
+function paintPending() {
+  document.querySelectorAll('[data-hint]').forEach(el => {
+    el.innerHTML = hintHtml(el.dataset.hint);
+  });
+}
+
+function hintHtml(term) {
+  if (PENDING.has(term)) return '<span class="spin"></span>';
+  const c = CANDS[term];
+  if (c === undefined) return '<span class="muted">carrega em Escolher</span>';
+  if (c === null) return '<span class="muted">a pesquisa falhou</span>';
+  return c.length
+    ? `<span class="muted">${c.length} hipóteses</span>`
+    : '<span class="muted">sem resultados</span>';
+}
+
+function render() {
+  const shown = ITEMS.filter(visible);
+  const ready = shown.filter(willBuy).length;
+  const undecided = shown.filter(i => i.status === 'por_decidir').length;
+  const owned = ITEMS.filter(i => i.owned).length;
+
+  $('#counts').innerHTML = `
+    <span><b>${ready}</b> a comprar</span>
+    <span><b>${undecided}</b> por decidir</span>
+    <span><b>${owned}</b> já tens</span>`;
+  $('#send').disabled = !ready;
+  $('#send').textContent = `Enviar ${ready} para o carrinho`;
+
+  if (!shown.length) {
+    $('#list').innerHTML = `<div class="empty">${ITEMS.length
+      ? 'Já tens tudo o que resta.'
+      : 'A lista do Cookidoo está vazia.'}</div>`;
+    return;
+  }
+
+  /* Um item pronto mas já marcado no Cookidoo não vai para o carrinho — pô-lo
+     ao lado dos que vão só faz parecer que se compram oito quando são três. */
+  const bucket = it =>
+    it.status === 'por_decidir' ? (it.owned ? 'decidir_marcado' : 'decidir')
+    : it.status === 'mapeado' ? (it.owned ? 'pronto_marcado' : 'pronto')
+    : 'ignorado';
+
+  const GROUPS = [
+    ['decidir', 'Por decidir'],
+    ['pronto', `Vão para o carrinho — ${ready}`],
+    ['decidir_marcado', 'Por decidir · já os tens'],
+    ['pronto_marcado', 'Prontos · já os tens, não vão'],
+    ['ignorado', 'Ignorados'],
+  ];
+
+  let html = '';
+  for (const [key, title] of GROUPS) {
+    const rows = shown.filter(it => bucket(it) === key);
+    if (!rows.length) continue;
+    html += `<div class="group">${title}</div>` + rows.map(itemHtml).join('');
+  }
+  $('#list').innerHTML = html;
+  wire();
+}
+
+function itemHtml(it) {
+  const m = it.mapped;
+  let target;
+  if (it.status === 'mapeado') {
+    const nope = it.owned ? ' <span class="muted">· não vai (já tens)</span>' : '';
+    const n = (it.options || []).length;
+    const alt = n > 1
+      ? ` <span class="pick-basis" title="Escolhido entre ${n} produtos aceites para este item.">${
+          esc(it.basis || `mais barato de ${n}`)}</span>` : '';
+    target = `<div class="target link" data-peek="${esc(it.id)}">→ <b>${
+      esc(m.nome_continente || m.pid)}</b> <span class="muted">· ${esc(m.pid)}</span>${alt}${nope}</div>`;
+  } else if (it.status === 'ignorado') {
+    target = '<div class="target muted">não vai para o carrinho</div>';
+  } else {
+    target = `<div class="target" data-hint="${esc(it.name)}">${hintHtml(it.name)}</div>`;
+  }
+
+  const qty = it.status === 'mapeado'
+    ? `<input class="qty" type="number" min="0" step="0.1" value="${m.quantidade ?? 1}"
+              data-qty="${esc(it.id)}" title="quantidade a comprar">` : '';
+
+  const actions = it.status === 'por_decidir'
+    ? `<button data-open="${esc(it.id)}">Escolher</button>
+       <button data-ignore="${esc(it.id)}" title="nunca comprar isto">Ignorar</button>`
+    : `<button data-open="${esc(it.id)}">Trocar</button>
+       <button data-forget="${esc(it.id)}" title="esquecer a decisão">✕</button>`;
+
+  // De onde veio o item: uma receita da lista, ou escrito por ti.
+  const origin = it.source === 'extra'
+    ? '<span class="badge-src">teu</span>'
+    : `<span class="badge-src recipe" title="${esc((it.recipes || []).join(', '))}">${
+        (it.recipes || []).length > 1 ? (it.recipes.length + ' receitas')
+        : esc((it.recipes || [])[0] || 'receita')}</span>`;
+
+  return `<div class="item ${it.owned ? 'owned' : ''}" data-item="${esc(it.id)}">
+    <div class="row">
+      <span class="dot ${it.status}"></span>
+      <div class="grow">
+        <span class="name">${esc(it.name)}</span>
+        <span class="amount">${esc(it.amount)}</span>
+        ${origin}
+        ${it.owned ? '<span class="badge-owned">já tens</span>' : ''}
+        ${target}
+      </div>
+      ${qty}${actions}
+    </div>
+  </div>`;
+}
+
+function wire() {
+  document.querySelectorAll('[data-open]').forEach(b =>
+    b.onclick = () => toggle(b.dataset.open));
+  document.querySelectorAll('[data-ignore]').forEach(b =>
+    b.onclick = () => ignore(byId(b.dataset.ignore).name));
+  document.querySelectorAll('[data-forget]').forEach(b =>
+    b.onclick = () => forget(byId(b.dataset.forget).name));
+  document.querySelectorAll('[data-qty]').forEach(inp =>
+    inp.onchange = () => setQty(byId(inp.dataset.qty).name, parseFloat(inp.value) || 1));
+  // Pré-visualização também no produto já escolhido.
+  document.querySelectorAll('[data-peek]').forEach(el => {
+    const it = byId(el.dataset.peek);
+    if (!it || !it.mapped) return;
+    const c = { pid: it.mapped.pid, name: it.mapped.nome_continente || it.mapped.pid };
+    el.onmouseenter = () => armTip(el, c);
+    el.onmouseleave = hideTip;
+  });
+}
+
+/* ---- decisões: mudam o estado em memória, sem reler o Cookidoo ---------- */
+
+async function ignore(term) {
+  try {
+    const row = await api('/sync/ignore', {
+      method: 'POST', body: JSON.stringify({ term })
+    });
+    patch(term, { status: 'ignorado', mapped: row });
+  } catch (e) { say(esc(e.message), 'err'); }
+}
+
+async function forget(term) {
+  try {
+    await api('/sync/map?term=' + encodeURIComponent(term), { method: 'DELETE' });
+    patch(term, { status: 'por_decidir', mapped: null });
+    if (!CANDS[term]) prefetch();
+  } catch (e) { say(esc(e.message), 'err'); }
+}
+
+async function pick(term, choice) {
+  try {
+    const row = await api('/sync/map', {
+      method: 'POST',
+      body: JSON.stringify({ term, pid: choice.pid, name: choice.name, quantity: 1 })
+    });
+    OPEN = null;
+    patch(term, { status: 'mapeado', mapped: row });
+  } catch (e) { say(esc(e.message), 'err'); }
+}
+
+/* Vários produtos aceites para o mesmo item: compra-se o mais barato. */
+
+async function addOption(id, choice) {
+  const it = byId(id);
+  try {
+    await api('/sync/map', { method: 'POST', body: JSON.stringify({
+      term: it.name, pid: choice.pid, name: choice.name,
+      quantity: (it.mapped && it.mapped.quantidade) || 1, replace: false })});
+    await refreshChoice(it.name);
+    renderPanel(id);
+  } catch (e) { say(esc(e.message), 'err'); }
+}
+
+async function dropOption(id, pid) {
+  const it = byId(id);
+  try {
+    await api(`/sync/map/option?term=${encodeURIComponent(it.name)}&pid=${
+      encodeURIComponent(pid)}`, { method: 'DELETE' });
+    await refreshChoice(it.name);
+    renderPanel(id);
+  } catch (e) { say(esc(e.message), 'err'); }
+}
+
+/* Qual dos aceites ganha hoje é decidido no servidor, que sabe os preços. */
+async function refreshChoice(term) {
+  const key = norm(term);
+  try {
+    const r = await api('/sync/best?term=' + encodeURIComponent(term));
+    const opts = await api('/sync/list');   // vem de cache, é instantâneo
+    const fresh = opts.items.find(i => norm(i.name) === key);
+    ITEMS.filter(i => norm(i.name) === key).forEach(i => Object.assign(i, {
+      status: fresh ? fresh.status : (r.chosen ? 'mapeado' : 'por_decidir'),
+      mapped: r.chosen || (fresh && fresh.mapped) || null,
+      options: fresh ? fresh.options : [],
+      basis: r.basis || null,
+    }));
+  } catch (e) { /* o render seguinte mostra o que houver */ }
+  render();
+}
+
+async function setQty(term, quantity) {
+  // A quantidade é do item, não do produto: vale para todos os aceites.
+  try {
+    const r = await api(`/sync/quantity?term=${encodeURIComponent(term)}&quantity=${quantity}`,
+      { method: 'PATCH' });
+    const key = norm(term);
+    ITEMS.filter(i => norm(i.name) === key).forEach(i => {
+      i.options = r.options;
+      if (i.mapped) i.mapped = { ...i.mapped, quantidade: quantity };
+    });
+    say(`Quantidade de <b>${esc(term)}</b> guardada: ${quantity}.`, 'ok');
+  } catch (e) { say(esc(e.message), 'err'); }
+}
+
+function patch(term, changes) {
+  // O mapeamento é guardado por nome, por isso decidir uma "cebola" decide
+  // todas — as três das receitas e a que escreveste. Atualizar só a linha
+  // clicada deixava as outras num estado que já não é verdade.
+  const key = norm(term);
+  ITEMS.filter(i => norm(i.name) === key).forEach(i => Object.assign(i, changes));
+  hideTip();
+  render();
+}
+
+/* ---- hipóteses --------------------------------------------------------- */
+
+async function toggle(id) {
+  const it = byId(id);
+  if (!it) return;
+  const term = it.name;
+  const card = document.querySelector(`[data-item="${CSS.escape(id)}"]`);
+  const open = card.querySelector('.panel');
+  document.querySelectorAll('.panel').forEach(p => p.remove());
+  if (open) { OPEN = null; return; }
+  OPEN = id;
+  card.insertAdjacentHTML('beforeend',
+    '<div class="panel"><span class="spin"></span> a procurar…</div>');
+  if (!CANDS[term]) {
+    PENDING.add(term); paintPending();
+    try {
+      Object.assign(CANDS, await api('/sync/candidates', {
+        method: 'POST', body: JSON.stringify({ terms: [term] })
+      }));
+    } catch (e) { CANDS[term] = null; }
+    PENDING.delete(term); paintPending();
+  }
+  if (OPEN === id) renderPanel(id);
+}
+
+function renderPanel(id) {
+  const it = byId(id);
+  if (!it) return;
+  const term = it.name;
+  const card = document.querySelector(`[data-item="${CSS.escape(id)}"]`);
+  const panel = card && card.querySelector('.panel');
+  if (!panel) return;
+  panel.innerHTML = candsHtml(CANDS[term] || [], it.options || []) + searchHtml();
+  panel.querySelectorAll('[data-pick]').forEach(b =>
+    b.onclick = () => { hideTip(); pick(term, JSON.parse(b.dataset.pick)); });
+  panel.querySelectorAll('[data-add]').forEach(b =>
+    b.onclick = () => { hideTip(); addOption(id, JSON.parse(b.dataset.add)); });
+  panel.querySelectorAll('[data-drop]').forEach(b =>
+    b.onclick = () => { hideTip(); dropOption(id, JSON.parse(b.dataset.drop).pid); });
+  wireTips(panel);
+
+  const input = panel.querySelector('input');
+  const go = async () => {
+    if (!input.value.trim()) return;
+    panel.querySelector('.cands').innerHTML = '<span class="spin"></span>';
+    try {
+      const r = await api('/sync/search?q=' + encodeURIComponent(input.value));
+      CANDS[term] = r.results;
+    } catch (e) { CANDS[term] = null; }
+    renderPanel(id);
+  };
+  panel.querySelector('[data-go]').onclick = go;
+  input.onkeydown = e => { if (e.key === 'Enter') go(); };
+}
+
+function candsHtml(list, accepted = []) {
+  const has = pid => accepted.some(o => o.pid === pid);
+  const rows = list.map(c => `
+    <div class="cand ${has(c.pid) ? 'on' : ''}">
+      <button class="cand-main" data-pick='${esc(JSON.stringify({ pid: c.pid, name: c.name }))}'
+              data-full='${esc(JSON.stringify(c))}' title="usar só este">
+        ${c.image ? `<img src="${esc(c.image)}" alt="" loading="lazy">` : '<img alt="">'}
+        <span class="t">${esc(c.name)}<br><small>${esc(c.pid)}${
+          c.category ? ' · ' + esc(c.category) : ''}</small></span>
+        ${c.origin === 'já compras' ? '<span class="tag">já compras</span>' : ''}
+        <span class="price">${money(c.price)}</span>
+      </button>
+      <button class="cand-add" data-${has(c.pid) ? 'drop' : 'add'}='${
+        esc(JSON.stringify({ pid: c.pid, name: c.name }))}'
+        title="${has(c.pid) ? 'tirar dos aceites' : 'aceitar também — compra-se o mais barato'}"
+      >${has(c.pid) ? '✓' : '+'}</button>
+    </div>`).join('');
+
+  // Aceites que não aparecem nas hipóteses de hoje continuam a contar.
+  const extra = accepted.filter(o => !list.some(c => c.pid === o.pid)).map(o => `
+    <div class="cand on">
+      <span class="cand-main muted" style="padding:8px 10px">
+        <span class="t">${esc(o.nome_continente || o.pid)}<br><small>${esc(o.pid)}</small></span>
+      </span>
+      <button class="cand-add" data-drop='${esc(JSON.stringify({ pid: o.pid, name: o.nome_continente }))}'
+              title="tirar dos aceites">✓</button>
+    </div>`).join('');
+
+  if (!list.length && !extra)
+    return '<div class="cands"><span class="muted">Nada encontrado. Procura por outro termo:</span></div>';
+  return `<div class="cands">${rows}${extra}</div>${
+    accepted.length > 1
+      ? `<div class="hint-multi">${accepted.length} produtos aceites — compra-se o mais barato à unidade de medida.</div>`
+      : ''}`;
+}
+
+const searchHtml = () => `<div class="searchbar">
+    <input placeholder="procurar outro produto no Continente…">
+    <button data-go>Procurar</button>
+  </div>`;
+
+/* ---- pré-visualização -------------------------------------------------- */
+
+const DETAILS = {};   // pid -> detalhe, ou null quando não deu
+let tipTimer = null, tipPid = null;
+const big = u => u ? u.replace(/sw=\d+&sh=\d+/, 'sw=400&sh=400') : '';
+
+function tipHtml(c, d, loading) {
+  const rows = [['id', c.pid]];
+  if (d) {
+    if (d.price_per_unit) rows.push(['preço', d.price_per_unit]);
+    if (d.min_quantity > 1 || d.step_quantity > 1)
+      rows.push(['vende-se em', `${d.min_quantity}${d.primary_unit ? ' ' + d.primary_unit : ''}`]);
+    else if (d.primary_unit) rows.push(['unidade', d.primary_unit]);
+  }
+  const warn = d && (d.min_quantity > 1 || d.step_quantity > 1)
+    ? `<div class="note">Mínimo ${d.min_quantity}${d.primary_unit ? ' ' + d.primary_unit : ''}${
+        d.step_quantity > 1 ? `, de ${d.step_quantity} em ${d.step_quantity}` : ''}.</div>` : '';
+  const stock = d && d.out_of_stock ? '<div class="note off">Sem stock.</div>' : '';
+  const price = d && d.price != null ? d.price : c.price;
+  const img = c.image ? big(c.image) : (d && d.image);
+
+  return `
+    ${img ? `<img src="${esc(img)}" alt="" onerror="this.remove()">` : ''}
+    <div class="tname">${esc((d && d.name) || c.name)}</div>
+    ${(d && d.brand) || c.brand ? `<div class="tbrand">${esc((d && d.brand) || c.brand)}</div>` : ''}
+    <div class="tprice">${money(price)}</div>
+    ${c.category ? `<div class="tbrand">${esc(c.category)}</div>` : ''}
+    <dl>${rows.map(([k, v]) => `<dt>${esc(k)}</dt><dd>${esc(String(v))}</dd>`).join('')}
+      ${loading ? '<dt>detalhe</dt><dd><span class="spin"></span></dd>' : ''}
+      ${d === null && !loading ? '<dt>detalhe</dt><dd class="muted">indisponível</dd>' : ''}
+    </dl>${warn}${stock}`;
+}
+
+function placeTip(el) {
+  const tip = $('#tip'), r = el.getBoundingClientRect(), w = 270, gap = 12;
+  let left = r.right + gap;
+  if (left + w > innerWidth - 8) left = r.left - w - gap;
+  tip.style.left = Math.max(8, left) + 'px';
+  const h = tip.offsetHeight || 340;
+  tip.style.top = Math.max(8, Math.min(r.top, innerHeight - h - 8)) + 'px';
+}
+
+function armTip(el, c) {
+  clearTimeout(tipTimer);
+  tipTimer = setTimeout(() => showTip(el, c), 220);
+}
+
+async function showTip(el, c) {
+  tipPid = c.pid;
+  const tip = $('#tip');
+  const known = DETAILS[c.pid];
+  tip.innerHTML = tipHtml(c, known ?? null, known === undefined);
+  tip.classList.add('on');
+  placeTip(el);
+  if (known !== undefined) return;
+
+  let d = null;
+  try {
+    const p = await api('/product/' + encodeURIComponent(c.pid));
+    d = { name: p.name, brand: p.brand, price: p.price,
+          price_per_unit: p.price_per_unit, min_quantity: p.min_quantity,
+          step_quantity: p.step_quantity, primary_unit: p.primary_unit,
+          out_of_stock: p.out_of_stock,
+          image: Array.isArray(p.image) ? p.image[0] : p.image };
+  } catch (e) { d = null; }
+  DETAILS[c.pid] = d;               // null fica registado: não repete o pedido
+  if (tipPid === c.pid && tip.classList.contains('on')) {
+    tip.innerHTML = tipHtml(c, d, false);
+    placeTip(el);
+  }
+}
+
+function hideTip() {
+  clearTimeout(tipTimer); tipPid = null;
+  $('#tip').classList.remove('on');
+}
+
+function wireTips(panel) {
+  panel.querySelectorAll('[data-pick]').forEach(btn => {
+    const c = JSON.parse(btn.dataset.full);
+    btn.onmouseenter = () => armTip(btn, c);
+    btn.onmouseleave = hideTip;
+  });
+}
+
+/* ---- barra de topo ----------------------------------------------------- */
+
+$('#reload').onclick = () => load(true);
+$('#hideOwned').onchange = () => { render(); prefetch(); };
+addEventListener('scroll', hideTip, { passive: true });
+
+$('#send').onclick = async () => {
+  const going = ITEMS.filter(visible).filter(willBuy).length;
+  $('#send').disabled = true;
+  say(`<span class="spin"></span> a enviar ${going} para o carrinho…`);
+  try {
+    const r = await api('/sync/send', {
+      method: 'POST', body: JSON.stringify({
+        include_owned: false, mark_done: $('#markDone').checked })
+    });
+    const lines = r.results.map(x => x.ok
+      ? `✅ ${esc((x.line && x.line.name) || x.pid)} — ${
+          x.line ? x.line.quantity + ' ' + (x.line.unit || '') : ''}`
+      : `❌ ${esc(x.pid)} — ${esc(x.reason || '')}`).join('\n');
+    // Sem sessão iniciada o site aceita tudo — mas num carrinho de convidado,
+    // que nunca aparece na conta. Melhor dizê-lo do que deixar acreditar.
+    const anon = r.cart.authenticated === false
+      ? '\n\n⚠ A sessão não está autenticada: isto foi para um carrinho de convidado, não para a tua conta.'
+      : '';
+    const marked = r.marked
+      ? `\n${r.marked} ${r.marked === 1 ? 'item passou' : 'itens passaram'} a "Itens que tem" no Cookidoo.` : '';
+    say(`<b>${r.added} no carrinho</b>, ${r.failed} falharam. Total: <b>${
+      esc(r.cart.grand_total)}</b>${anon}${marked}\n\n${lines}\n\n<a href="${CART_URL}"
+      target="_blank" rel="noopener">Abrir o carrinho no continente.pt →</a>`,
+      r.failed || anon ? '' : 'ok');
+    if (r.marked) await load();   // o Cookidoo mudou; reler a lista
+  } catch (e) { say(esc(e.message), 'err'); }
+  render();
+};
+
+load();
+</script>
+</body>
+</html>
