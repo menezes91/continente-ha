@@ -58,8 +58,9 @@
   .item {
     background: var(--card); border: 1px solid var(--line);
     border-radius: var(--radius); margin-bottom: 8px; box-shadow: var(--shadow);
-    overflow: hidden;
+    overflow: hidden; transition: border-color .15s ease, box-shadow .15s ease;
   }
+  .item:hover { border-color: var(--muted); }
   .row { display: flex; align-items: center; gap: 12px; padding: 12px 14px; }
   .dot { width: 8px; height: 8px; border-radius: 50%; flex: none; }
   .dot.mapeado { background: var(--ok); }
@@ -77,6 +78,9 @@
     border: 1px solid var(--line); border-radius: 7px;
     background: var(--bg); color: var(--ink);
   }
+  /* Os controlos da direita (quantidade + botões) andam juntos: no telemóvel
+     descem em bloco para baixo do nome, em vez de o espremer. */
+  .ctrls { display: flex; align-items: center; gap: 8px; flex: none; }
   .panel { border-top: 1px solid var(--line); padding: 12px 14px;
            background: var(--bg); }
   .cands { display: grid; gap: 7px; }
@@ -321,6 +325,41 @@
   #view-precos .msg { padding: 10px 12px; border-radius: 8px; border: 1px solid var(--line);
          background: var(--card); margin-bottom: 14px; font-size: 14px; }
 
+  /* --- telemóvel ---------------------------------------------------------
+     No painel lateral do Home Assistant, num telemóvel, tudo isto vive numa
+     coluna de ~360px. Sem estas regras o cabeçalho parte-se em colunas
+     estreitas e o nome do artigo fica espremido pelos botões. */
+  @media (max-width: 600px) {
+    header { padding: 10px 14px; gap: 10px 12px; }
+    h1 { font-size: 16px; }
+    .spacer { display: none; }
+    /* Título e separadores partilham a primeira linha; o resto desce. */
+    .tabs { margin-left: auto; }
+    .counts { width: 100%; gap: 18px; font-size: 14px; }
+    /* Cada toggle ocupa a sua linha — assim a etiqueta tem espaço e não parte
+       o texto ao lado do quadradinho. Os botões partilham a última linha. */
+    .only-lista { flex-wrap: wrap; gap: 10px 12px; width: 100%; }
+    .toggle { flex: 1 1 100%; }
+    #reload { flex: 1 1 auto; }
+    #send { flex: 3 1 auto; }
+    header button { padding: 9px 14px; }
+    .tab { padding: 8px 14px; }
+    main { padding: 14px; }
+
+    /* A linha do artigo passa a duas: nome em cima, controlos em baixo,
+       alinhados à direita e recuados para ficarem debaixo do nome. */
+    .row { flex-wrap: wrap; row-gap: 10px; align-items: flex-start; }
+    .dot { margin-top: 7px; }
+    .grow { flex: 1 1 calc(100% - 20px); }
+    .ctrls { flex: 1 1 100%; margin-left: 20px; justify-content: flex-end; }
+    .qty { width: 64px; }
+
+    /* Preços: a barra e as métricas respiram melhor mais compactas. */
+    .pv-bar { flex-wrap: wrap; padding: 14px 14px 0; }
+    .pv-grid { padding: 14px; gap: 14px; }
+    #view-precos .kpis { gap: 16px 22px; }
+    #view-precos .side { max-height: none; }
+  }
 </style>
 </head>
 <body>
@@ -542,7 +581,7 @@ function itemHtml(it) {
         ${originBadge(it)}${ownedBadge(it)}
         ${target}
       </div>
-      ${qty}${actions}
+      <div class="ctrls">${qty}${actions}</div>
     </div>
   </div>`;
 }
